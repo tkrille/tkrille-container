@@ -1,0 +1,14 @@
+{
+  "name": "tkrille-container",
+  "version": "0.1.0",
+  "author": "Thomas Krille",
+  "summary": "Create and run any container you want",
+  "license": "Apache 2.0",
+  "source": "https://github.com/tkrille/tkrille-container",
+  "project_page": "https://github.com/tkrille/tkrille-container",
+  "issues_url": "https://github.com/tkrille/tkrille-container/issues",
+  "dependencies": [
+    {"name":"puppetlabs-stdlib","version_requirement":">= 4.1.0"}
+  ]
+}
+
