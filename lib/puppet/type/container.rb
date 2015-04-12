@@ -59,7 +59,12 @@ Puppet::Type.newtype(:container) do
       fail('Parameter \'env\' must be a Hash') unless value.is_a?(Hash)
     end
 
-    # TODO: use 'insync?'
+    def insync?(is)
+      should.each do |key, value|
+        return false unless is.has_key? key and is[key] == value
+      end
+      true
+    end
   end
 
   validate do

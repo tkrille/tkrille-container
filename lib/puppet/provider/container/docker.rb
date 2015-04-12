@@ -66,7 +66,16 @@ Puppet::Type.type(:container).provide(:docker) do
   mk_resource_methods
 
   def create
-    docker('run', '-d', '--name', @resource[:name], @resource[:image])
+    options = create_options @resource
+    docker('run', '-d', '--name', @resource[:name], options, @resource[:image])
+  end
+
+  def create_options(resource)
+    opts = []
+
+    resource[:env].collect { |k, v| opts << "-e" << "#{k}=#{v}" } unless resource[:env].nil? or resource[:env].empty?
+
+    opts
   end
 
   def destroy
@@ -87,14 +96,11 @@ Puppet::Type.type(:container).provide(:docker) do
   end
 
   def image_validate(fqin)
-    if (fqin =~ FQIN_PATTERN).nil?
-      fail("invalid value '#{fqin}' for 'image'")
-    end
+    fail("invalid value '#{fqin}' for 'image'") if (fqin =~ FQIN_PATTERN).nil?
   end
 
   def image_munge(fqin)
     fqin.scan FQIN_PATTERN do |match|
-      Puppet.debug("match = #{match}")
       if match[4].nil?
         return "#{fqin}:latest"
       end

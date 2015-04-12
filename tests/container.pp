@@ -15,13 +15,16 @@
 container { 'test':
   ensure => present,
   image  => 'test:latest',
-#  env    => {
-#    'TEST' => 'some value',
-#    'TEST_2' => 'some other value',
-#  }
+  env    => {
+    'TEST' => 'some value',
+    'TEST_2' => 'some other2 value',
+  }
 }
 
 container { 'test2':
   ensure => present,
   image  => 'test:latest',
+  env    => {
+    'TEST' => 'some value 1',
+  }
 }
