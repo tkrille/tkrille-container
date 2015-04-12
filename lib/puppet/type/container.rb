@@ -67,6 +67,18 @@ Puppet::Type.newtype(:container) do
     end
   end
 
+  newproperty(:links) do
+    desc 'Links to local containers as a Hash'
+
+    validate do |value|
+      fail('Parameter \'links\' must be a Hash') unless value.is_a?(Hash)
+    end
+  end
+
+  autorequire(:container) do
+    self[:links].keys unless self[:links].nil?
+  end
+
   validate do
     fail('\'image\' is required when ensure is \'present\'') if self[:ensure] == :present and self[:image].nil?
     provider.validate

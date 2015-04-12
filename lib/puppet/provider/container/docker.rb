@@ -39,24 +39,33 @@ Puppet::Type.type(:container).provide(:docker) do
 
       name = container['Name'].split('/').last
       image = container_ids_to_image[container['Id']]
+
       env = Hash[container['Config']['Env'].collect do |it|
                    parts = it.split '=', 2
                    [parts.first, parts.last]
                  end]
 
+      if container['HostConfig']['Links'].nil?
+        links = {}
+      else
+        links = Hash[container['HostConfig']['Links'].collect do |it|
+                       parts = it.split ':', 2
+                       [parts.first.split('/').last, parts.last.split('/').last]
+                     end]
+      end
+
       new(:name => name,
           :ensure => :present,
           :image => image,
-          :env => env)
+          :env => env,
+          :links => links)
     end
   end
 
   def self.prefetch(resources)
     containers = instances
     resources.keys.each do |name|
-
       provider = containers.find { |it| it.name == name }
-
       if provider
         resources[name].provider = provider
       end
@@ -74,6 +83,7 @@ Puppet::Type.type(:container).provide(:docker) do
     opts = []
 
     resource[:env].collect { |k, v| opts << "-e" << "#{k}=#{v}" } unless resource[:env].nil? or resource[:env].empty?
+    resource[:links].collect { |k, v| opts << "--link" << "#{k}:#{v}" } unless resource[:links].nil? or resource[:links].empty?
 
     opts
   end
@@ -110,6 +120,10 @@ Puppet::Type.type(:container).provide(:docker) do
   end
 
   def env=(env_hash)
+    @property_changed = true
+  end
+
+  def links=(links_hash)
     @property_changed = true
   end
 

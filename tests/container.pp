@@ -17,14 +17,26 @@ container { 'test':
   image  => 'test:latest',
   env    => {
     'TEST' => 'some value',
-    'TEST_2' => 'some other2 value',
-  }
+    'TEST_2' => 'some other value',
+  },
+  links => {
+    'test2' => 'link1',
+    'test3' => 'link2',
+  },
 }
 
 container { 'test2':
   ensure => present,
   image  => 'test:latest',
   env    => {
-    'TEST' => 'some value 1',
-  }
+    'TEST' => 'some value',
+  },
+}
+
+container { 'test3':
+  ensure => present,
+  image  => 'test:latest',
+  env    => {
+    'TEST' => 'some value',
+  },
 }

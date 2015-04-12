@@ -7,8 +7,6 @@
   "source": "https://github.com/tkrille/tkrille-container",
   "project_page": "https://github.com/tkrille/tkrille-container",
   "issues_url": "https://github.com/tkrille/tkrille-container/issues",
-  "dependencies": [
-    {"name":"puppetlabs-stdlib","version_requirement":">= 4.5.0"}
-  ]
+  "dependencies": []
 }
 
