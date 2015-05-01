@@ -23,6 +23,7 @@ container { 'test':
     'test2' => 'link1',
     'test3' => 'link2',
   },
+  volumes => '/test-anon',
 }
 
 container { 'test2':
@@ -31,6 +32,7 @@ container { 'test2':
   env    => {
     'TEST' => 'some value',
   },
+  volumes => ['/tmp:/test-host'],
 }
 
 container { 'test3':
@@ -39,4 +41,10 @@ container { 'test3':
   env    => {
     'TEST' => 'some value',
   },
+  volumes => [
+    '/test-anon',
+    '/tmp:/test-host',
+    '/tmp:/test-host-expl-rw:rw',
+    '/tmp:/test-host-ro:ro',
+  ],
 }

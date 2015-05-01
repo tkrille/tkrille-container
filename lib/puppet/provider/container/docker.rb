@@ -36,30 +36,41 @@ Puppet::Type.type(:container).provide(:docker) do
     return [] if container_ids.empty?
 
     JSON.parse(docker('inspect', container_ids)).map do |container|
-
-      name = container['Name'].split('/').last
-      image = container_ids_to_image[container['Id']]
-
-      env = Hash[container['Config']['Env'].collect do |it|
-                   parts = it.split '=', 2
-                   [parts.first, parts.last]
-                 end]
-
-      if container['HostConfig']['Links'].nil?
-        links = {}
-      else
-        links = Hash[container['HostConfig']['Links'].collect do |it|
-                       parts = it.split ':', 2
-                       [parts.first.split('/').last, parts.last.split('/').last]
-                     end]
-      end
-
-      new(:name => name,
+      new(:name => container['Name'].split('/').last,
           :ensure => :present,
-          :image => image,
-          :env => env,
-          :links => links)
+          :image => container_ids_to_image[container['Id']],
+          :env => get_env(container),
+          :links => get_links(container),
+          :volumes => get_volumes(container))
     end
+  end
+
+  def self.get_env(container)
+    Hash[container['Config']['Env'].collect do |it|
+           parts = it.split '=', 2
+           [parts.first, parts.last]
+         end]
+  end
+
+  def self.get_links(container)
+    if container['HostConfig']['Links'].nil?
+      {}
+    else
+      Hash[container['HostConfig']['Links'].collect do |it|
+             parts = it.split ':', 2
+             [parts.first.split('/').last, parts.last.split('/').last]
+           end]
+    end
+  end
+
+  def self.get_volumes(container)
+    volumes_host = []
+    volumes_host = container['HostConfig']['Binds'] unless container['HostConfig']['Binds'].nil?
+
+    volumes_anon = []
+    volumes_anon = container['Config']['Volumes'].map { |it| it[0] } unless container['Config']['Volumes'].nil?
+
+    volumes_host.concat volumes_anon
   end
 
   def self.prefetch(resources)
@@ -75,8 +86,7 @@ Puppet::Type.type(:container).provide(:docker) do
   mk_resource_methods
 
   def create
-    options = create_options @resource
-    docker('run', '-d', '--name', @resource[:name], options, @resource[:image])
+    docker 'run', '-d', '--name', @resource[:name], create_options(@resource), @resource[:image]
   end
 
   def create_options(resource)
@@ -84,6 +94,7 @@ Puppet::Type.type(:container).provide(:docker) do
 
     resource[:env].collect { |k, v| opts << "-e" << "#{k}=#{v}" } unless resource[:env].nil? or resource[:env].empty?
     resource[:links].collect { |k, v| opts << "--link" << "#{k}:#{v}" } unless resource[:links].nil? or resource[:links].empty?
+    resource[:volumes].collect { |v| opts << "-v" << "#{v}" } unless resource[:volumes].nil? or resource[:volumes].empty?
 
     opts
   end
@@ -124,6 +135,10 @@ Puppet::Type.type(:container).provide(:docker) do
   end
 
   def links=(links_hash)
+    @property_changed = true
+  end
+
+  def volumes=(volumes_array)
     @property_changed = true
   end
 
