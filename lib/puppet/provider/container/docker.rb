@@ -42,7 +42,8 @@ Puppet::Type.type(:container).provide(:docker) do
           :env => get_env(container),
           :links => get_links(container),
           :volumes => get_volumes(container),
-          :hostname => get_hostname(container))
+          :hostname => get_hostname(container),
+          :ports => get_ports(container))
     end
   end
 
@@ -80,6 +81,24 @@ Puppet::Type.type(:container).provide(:docker) do
     hostname
   end
 
+  def self.get_ports(container)
+    ports = []
+
+    container['HostConfig']['PortBindings'].each do |k, bindings|
+      container_port = k.split(/\//, 2)[0]
+
+      bindings.each do |binding|
+        port = container_port
+        port = "#{binding['HostPort']}:#{port}" unless binding['HostPort'].empty?
+        port = ":#{port}" if binding['HostPort'].empty? and not binding['HostIp'].empty?
+        port = "#{binding['HostIp']}:#{port}" unless binding['HostIp'].empty?
+        ports << port
+      end
+    end
+
+    ports
+  end
+
   def self.prefetch(resources)
     containers = instances
     resources.keys.each do |name|
@@ -103,6 +122,7 @@ Puppet::Type.type(:container).provide(:docker) do
     resource[:links].collect { |k, v| opts << '--link' << "#{k}:#{v}" } unless resource[:links].nil? or resource[:links].empty?
     resource[:volumes].collect { |v| opts << '-v' << "#{v}" } unless resource[:volumes].nil? or resource[:volumes].empty?
     opts << '-h' << resource[:hostname] unless resource[:hostname].nil? or resource[:hostname].empty?
+    resource[:ports].collect { |v| opts << '-p' << "#{v}" } unless resource[:ports].nil? or resource[:ports].empty?
 
     opts
   end
@@ -151,6 +171,10 @@ Puppet::Type.type(:container).provide(:docker) do
   end
 
   def hostname=(hostname)
+    @property_changed = true
+  end
+
+  def ports=(ports_array)
     @property_changed = true
   end
 

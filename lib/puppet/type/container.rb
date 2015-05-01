@@ -96,6 +96,18 @@ Puppet::Type.newtype(:container) do
     end
   end
 
+  newproperty(:ports, :array_matching => :all) do
+    desc 'Ports to map from the container'
+
+    def insync?(is)
+      if is.is_a?(Array) and should.is_a?(Array)
+        is.sort == should.sort
+      else
+        is == should
+      end
+    end
+  end
+
   autorequire(:container) do
     self[:links].keys unless self[:links].nil?
   end
