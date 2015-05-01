@@ -41,7 +41,8 @@ Puppet::Type.type(:container).provide(:docker) do
           :image => container_ids_to_image[container['Id']],
           :env => get_env(container),
           :links => get_links(container),
-          :volumes => get_volumes(container))
+          :volumes => get_volumes(container),
+          :hostname => get_hostname(container))
     end
   end
 
@@ -73,6 +74,12 @@ Puppet::Type.type(:container).provide(:docker) do
     volumes_host.concat volumes_anon
   end
 
+  def self.get_hostname(container)
+    hostname = container['Config']['Hostname']
+    hostname += ".#{container['Config']['Domainname']}" unless container['Config']['Domainname'].empty?
+    hostname
+  end
+
   def self.prefetch(resources)
     containers = instances
     resources.keys.each do |name|
@@ -92,9 +99,10 @@ Puppet::Type.type(:container).provide(:docker) do
   def create_options(resource)
     opts = []
 
-    resource[:env].collect { |k, v| opts << "-e" << "#{k}=#{v}" } unless resource[:env].nil? or resource[:env].empty?
-    resource[:links].collect { |k, v| opts << "--link" << "#{k}:#{v}" } unless resource[:links].nil? or resource[:links].empty?
-    resource[:volumes].collect { |v| opts << "-v" << "#{v}" } unless resource[:volumes].nil? or resource[:volumes].empty?
+    resource[:env].collect { |k, v| opts << '-e' << "#{k}=#{v}" } unless resource[:env].nil? or resource[:env].empty?
+    resource[:links].collect { |k, v| opts << '--link' << "#{k}:#{v}" } unless resource[:links].nil? or resource[:links].empty?
+    resource[:volumes].collect { |v| opts << '-v' << "#{v}" } unless resource[:volumes].nil? or resource[:volumes].empty?
+    opts << '-h' << resource[:hostname] unless resource[:hostname].nil? or resource[:hostname].empty?
 
     opts
   end
@@ -139,6 +147,10 @@ Puppet::Type.type(:container).provide(:docker) do
   end
 
   def volumes=(volumes_array)
+    @property_changed = true
+  end
+
+  def hostname=(hostname)
     @property_changed = true
   end
 

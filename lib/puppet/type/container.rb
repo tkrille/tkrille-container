@@ -87,6 +87,15 @@ Puppet::Type.newtype(:container) do
     end
   end
 
+  newproperty(:hostname) do
+    desc 'the hostname of the container'
+
+    validate do |hostname|
+      fail('Parameter \'hostname\' must be a String') unless hostname.is_a?(String)
+      fail('Parameter \'hostname\' must be a valid hostname') if hostname.empty?
+    end
+  end
+
   autorequire(:container) do
     self[:links].keys unless self[:links].nil?
   end

@@ -15,6 +15,7 @@
 container { 'test':
   ensure => present,
   image  => 'test:latest',
+  hostname => 'test',
   env    => {
     'TEST' => 'some value',
     'TEST_2' => 'some other value',
@@ -29,6 +30,7 @@ container { 'test':
 container { 'test2':
   ensure => present,
   image  => 'test:latest',
+  hostname => 'test2',
   env    => {
     'TEST' => 'some value',
   },
