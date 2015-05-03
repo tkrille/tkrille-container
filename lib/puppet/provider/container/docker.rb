@@ -44,7 +44,9 @@ Puppet::Type.type(:container).provide(:docker) do
           :volumes => get_volumes(container),
           :hostname => get_hostname(container),
           :ports => get_ports(container),
-          :user => get_user(container))
+          :user => get_user(container),
+          :restart => get_restart(container))
+
 
     end
   end
@@ -107,6 +109,13 @@ Puppet::Type.type(:container).provide(:docker) do
     user
   end
 
+  def self.get_restart(container)
+    policy = container['HostConfig']['RestartPolicy']['Name']
+    policy = 'no' if policy.empty?
+    policy += ":#{container['HostConfig']['RestartPolicy']['MaximumRetryCount']}" if policy == 'on-failure'
+    policy
+  end
+
   def self.prefetch(resources)
     containers = instances
     resources.keys.each do |name|
@@ -132,6 +141,7 @@ Puppet::Type.type(:container).provide(:docker) do
     opts << '-h' << resource[:hostname] unless resource[:hostname].nil? or resource[:hostname].empty?
     resource[:ports].collect { |v| opts << '-p' << "#{v}" } unless resource[:ports].nil? or resource[:ports].empty?
     opts << '-u' << resource[:user] unless resource[:user].nil? or resource[:user].empty?
+    opts << '--restart' << resource[:restart] unless resource[:restart].nil? or resource[:restart].empty?
 
     opts
   end
@@ -189,6 +199,22 @@ Puppet::Type.type(:container).provide(:docker) do
 
   def user=(user)
     @property_changed = true
+  end
+
+  def restart=(restart_policy)
+    @property_changed = true
+  end
+
+  def restart_validate(restart_policy)
+    fail 'Parameter \'restart\' must be one of \'no\', \'always\', or \'on-failure[:max-retries]\'' unless restart_policy =~ /^(no|always)|^on-failure(:\d+)?$/
+  end
+
+  def restart_munge(restart_policy)
+    if restart_policy == 'on-failure'
+      return "#{restart_policy}:0"
+    end
+
+    restart_policy
   end
 
   def flush

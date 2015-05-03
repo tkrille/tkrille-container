@@ -117,6 +117,21 @@ Puppet::Type.newtype(:container) do
     end
   end
 
+  newproperty(:restart) do
+    desc 'The restart policy for failed containers'
+
+    validate do |restart|
+      fail 'Parameter \'restart\' must be a String' unless restart.is_a?(String)
+      fail 'Parameter \'restart\' must be not empty' if restart.empty?
+
+      provider.restart_validate restart
+    end
+
+    munge do |restart|
+      provider.restart_munge restart
+    end
+  end
+
   autorequire(:container) do
     self[:links].keys unless self[:links].nil?
   end

@@ -17,6 +17,7 @@ container { 'test':
   image  => 'test:latest',
   hostname => 'test',
   user => 'nobody',
+  restart => 'on-failure:10',
   env    => {
     'TEST' => 'some value',
     'TEST_2' => 'some other value',
@@ -44,6 +45,7 @@ container { 'test2':
   ensure => present,
   image  => 'test:latest',
   hostname => 'test2',
+  restart => 'always',
   env    => {
     'TEST' => 'some value',
   },
