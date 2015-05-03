@@ -16,6 +16,7 @@ container { 'test':
   ensure => present,
   image  => 'test:latest',
   hostname => 'test',
+  user => 'nobody',
   env    => {
     'TEST' => 'some value',
     'TEST_2' => 'some other value',

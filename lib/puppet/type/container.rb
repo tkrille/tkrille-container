@@ -88,7 +88,7 @@ Puppet::Type.newtype(:container) do
   end
 
   newproperty(:hostname) do
-    desc 'the hostname of the container'
+    desc 'The hostname of the container'
 
     validate do |hostname|
       fail('Parameter \'hostname\' must be a String') unless hostname.is_a?(String)
@@ -105,6 +105,15 @@ Puppet::Type.newtype(:container) do
       else
         is == should
       end
+    end
+  end
+
+  newproperty(:user) do
+    desc 'The user to run the first process within the container'
+
+    validate do |user|
+      fail('Parameter \'user\' must be a String') unless user.is_a?(String)
+      fail('Parameter \'user\' must be not empty') if user.empty?
     end
   end
 

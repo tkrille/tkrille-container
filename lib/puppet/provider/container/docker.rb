@@ -43,7 +43,9 @@ Puppet::Type.type(:container).provide(:docker) do
           :links => get_links(container),
           :volumes => get_volumes(container),
           :hostname => get_hostname(container),
-          :ports => get_ports(container))
+          :ports => get_ports(container),
+          :user => get_user(container))
+
     end
   end
 
@@ -99,6 +101,12 @@ Puppet::Type.type(:container).provide(:docker) do
     ports
   end
 
+  def self.get_user(container)
+    user = container['Config']['User']
+    user = 'root' if user.empty?
+    user
+  end
+
   def self.prefetch(resources)
     containers = instances
     resources.keys.each do |name|
@@ -123,6 +131,7 @@ Puppet::Type.type(:container).provide(:docker) do
     resource[:volumes].collect { |v| opts << '-v' << "#{v}" } unless resource[:volumes].nil? or resource[:volumes].empty?
     opts << '-h' << resource[:hostname] unless resource[:hostname].nil? or resource[:hostname].empty?
     resource[:ports].collect { |v| opts << '-p' << "#{v}" } unless resource[:ports].nil? or resource[:ports].empty?
+    opts << '-u' << resource[:user] unless resource[:user].nil? or resource[:user].empty?
 
     opts
   end
@@ -175,6 +184,10 @@ Puppet::Type.type(:container).provide(:docker) do
   end
 
   def ports=(ports_array)
+    @property_changed = true
+  end
+
+  def user=(user)
     @property_changed = true
   end
 
