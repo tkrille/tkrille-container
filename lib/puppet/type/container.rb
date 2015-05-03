@@ -132,8 +132,27 @@ Puppet::Type.newtype(:container) do
     end
   end
 
+  newproperty(:network) do
+    desc 'The network mode of the container'
+
+    validate do |network_mode|
+      fail 'Parameter \'network\' must be a String' unless network_mode.is_a?(String)
+      fail 'Parameter \'network\' must be not empty' if network_mode.empty?
+
+      provider.network_validate network_mode
+    end
+  end
+
   autorequire(:container) do
-    self[:links].keys unless self[:links].nil?
+    linked = []
+    linked = self[:links].keys unless self[:links].nil?
+
+    networked = []
+    unless self[:network].nil? or self[:network].empty? or not self[:network].start_with? 'container:'
+      networked = [self[:network].split(':', 2)[1]]
+    end
+
+    linked.concat networked
   end
 
   validate do

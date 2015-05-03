@@ -18,6 +18,7 @@ container { 'test':
   hostname => 'test',
   user => 'nobody',
   restart => 'on-failure:10',
+  network => 'bridge',
   env    => {
     'TEST' => 'some value',
     'TEST_2' => 'some other value',
@@ -44,8 +45,8 @@ container { 'test':
 container { 'test2':
   ensure => present,
   image  => 'test:latest',
-  hostname => 'test2',
   restart => 'always',
+  network => 'container:test3',
   env    => {
     'TEST' => 'some value',
   },
@@ -56,6 +57,7 @@ container { 'test2':
 container { 'test3':
   ensure => present,
   image  => 'test:latest',
+  network => 'host',
   env    => {
     'TEST' => 'some value',
   },

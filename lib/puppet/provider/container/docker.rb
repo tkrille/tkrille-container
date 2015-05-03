@@ -45,7 +45,8 @@ Puppet::Type.type(:container).provide(:docker) do
           :hostname => get_hostname(container),
           :ports => get_ports(container),
           :user => get_user(container),
-          :restart => get_restart(container))
+          :restart => get_restart(container),
+          :network => get_network(container))
 
 
     end
@@ -116,6 +117,10 @@ Puppet::Type.type(:container).provide(:docker) do
     policy
   end
 
+  def self.get_network(container)
+    container['HostConfig']['NetworkMode']
+  end
+
   def self.prefetch(resources)
     containers = instances
     resources.keys.each do |name|
@@ -142,6 +147,7 @@ Puppet::Type.type(:container).provide(:docker) do
     resource[:ports].collect { |v| opts << '-p' << "#{v}" } unless resource[:ports].nil? or resource[:ports].empty?
     opts << '-u' << resource[:user] unless resource[:user].nil? or resource[:user].empty?
     opts << '--restart' << resource[:restart] unless resource[:restart].nil? or resource[:restart].empty?
+    opts << '--net' << resource[:network] unless resource[:network].nil? or resource[:network].empty?
 
     opts
   end
@@ -156,7 +162,32 @@ Puppet::Type.type(:container).provide(:docker) do
   end
 
   def validate
-    # TODO: check invariants
+    unless @resource[:name] =~ /^[a-zA-Z0-9][a-zA-Z0-9_\.\-]*$/
+      fail "Invalid container name: #{@resource[:name]}. Only [a-zA-Z0-9][a-zA-Z0-9_.-]* are allowed"
+    end
+
+    case @resource[:network]
+      when 'host'
+        unless @resource[:links].nil? or @resource[:links].empty?
+          fail 'Conflicting parameters: \'network => host\' cannot be used with links.'
+        end
+        unless @resource[:hostname].nil? or @resource[:hostname].empty?
+          fail 'Conflicting parameters: \'hostname\' and \'network => host\''
+        end
+
+      when /^container:[a-zA-Z0-9][a-zA-Z0-9_\.\-]*$/
+        unless @resource[:links].nil? or @resource[:links].empty?
+          fail 'Conflicting parameters: \'network => container:...\' cannot be used with links.'
+        end
+        unless @resource[:hostname].nil? or @resource[:hostname].empty?
+          fail 'Conflicting parameters: \'hostname\' and \'network => container:...\''
+        end
+
+      when 'none'
+        unless @resource[:links].nil? or @resource[:links].empty?
+          fail 'Conflicting parameters: \'network => none\' cannot be used with links.'
+        end
+    end
   end
 
   def image=(fqin)
@@ -206,7 +237,9 @@ Puppet::Type.type(:container).provide(:docker) do
   end
 
   def restart_validate(restart_policy)
-    fail 'Parameter \'restart\' must be one of \'no\', \'always\', or \'on-failure[:max-retries]\'' unless restart_policy =~ /^(no|always)|^on-failure(:\d+)?$/
+    unless restart_policy =~ /^(no|always)$|^on-failure(:\d+)?$/
+      fail 'Parameter \'restart\' must be one of \'no\', \'always\', or \'on-failure[:max-retries]\''
+    end
   end
 
   def restart_munge(restart_policy)
@@ -215,6 +248,16 @@ Puppet::Type.type(:container).provide(:docker) do
     end
 
     restart_policy
+  end
+
+  def network=(network_mode)
+    @property_changed = true
+  end
+
+  def network_validate(network_mode)
+    unless network_mode =~ /^(none|bridge|host)$|^container:[a-zA-Z0-9][a-zA-Z0-9_\.\-]*$/
+      fail 'Parameter \'network\' must be one of \'none\', \'bridge\', \'host\', or \'container:<name>\''
+    end
   end
 
   def flush
@@ -226,4 +269,5 @@ Puppet::Type.type(:container).provide(:docker) do
 
     @property_hash = resource.to_hash
   end
+
 end
