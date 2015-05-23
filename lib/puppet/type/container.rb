@@ -59,7 +59,100 @@ Puppet::Type.newtype(:container) do
       fail('Parameter \'env\' must be a Hash') unless value.is_a?(Hash)
     end
 
-    # TODO: use 'insync?'
+    def insync?(is)
+      should.each do |key, value|
+        return false unless is.has_key? key and is[key] == value
+      end
+      true
+    end
+  end
+
+  newproperty(:links) do
+    desc 'Links to local containers as a Hash'
+
+    validate do |value|
+      fail('Parameter \'links\' must be a Hash') unless value.is_a?(Hash)
+    end
+  end
+
+  newproperty(:volumes, :array_matching => :all) do
+    desc 'List of external volumes'
+
+    def insync?(is)
+      if is.is_a?(Array) and should.is_a?(Array)
+        is.sort == should.sort
+      else
+        is == should
+      end
+    end
+  end
+
+  newproperty(:hostname) do
+    desc 'The hostname of the container'
+
+    validate do |hostname|
+      fail('Parameter \'hostname\' must be a String') unless hostname.is_a?(String)
+      fail('Parameter \'hostname\' must be a valid hostname') if hostname.empty?
+    end
+  end
+
+  newproperty(:ports, :array_matching => :all) do
+    desc 'Ports to map from the container'
+
+    def insync?(is)
+      if is.is_a?(Array) and should.is_a?(Array)
+        is.sort == should.sort
+      else
+        is == should
+      end
+    end
+  end
+
+  newproperty(:user) do
+    desc 'The user to run the first process within the container'
+
+    validate do |user|
+      fail('Parameter \'user\' must be a String') unless user.is_a?(String)
+      fail('Parameter \'user\' must be not empty') if user.empty?
+    end
+  end
+
+  newproperty(:restart) do
+    desc 'The restart policy for failed containers'
+
+    validate do |restart|
+      fail 'Parameter \'restart\' must be a String' unless restart.is_a?(String)
+      fail 'Parameter \'restart\' must be not empty' if restart.empty?
+
+      provider.restart_validate restart
+    end
+
+    munge do |restart|
+      provider.restart_munge restart
+    end
+  end
+
+  newproperty(:network) do
+    desc 'The network mode of the container'
+
+    validate do |network_mode|
+      fail 'Parameter \'network\' must be a String' unless network_mode.is_a?(String)
+      fail 'Parameter \'network\' must be not empty' if network_mode.empty?
+
+      provider.network_validate network_mode
+    end
+  end
+
+  autorequire(:container) do
+    linked = []
+    linked = self[:links].keys unless self[:links].nil?
+
+    networked = []
+    unless self[:network].nil? or self[:network].empty? or not self[:network].start_with? 'container:'
+      networked = [self[:network].split(':', 2)[1]]
+    end
+
+    linked.concat networked
   end
 
   validate do

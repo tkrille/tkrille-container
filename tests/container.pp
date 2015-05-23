@@ -15,13 +15,52 @@
 container { 'test':
   ensure => present,
   image  => 'test:latest',
-#  env    => {
-#    'TEST' => 'some value',
-#    'TEST_2' => 'some other value',
-#  }
+  hostname => 'test',
+  user => 'nobody',
+  restart => 'on-failure:10',
+  network => 'bridge',
+  env    => {
+    'TEST' => 'some value',
+    'TEST_2' => 'some other value',
+  },
+  links => {
+    'test2' => 'link1',
+    'test3' => 'link2',
+  },
+  volumes => [
+    '/test-anon',
+    '/tmp:/test-host',
+    '/tmp:/test-host-expl-rw:rw',
+    '/tmp:/test-host-ro:ro',
+  ],
+  ports => [
+    '8080',
+    '18080:8080',
+    '127.0.0.1:19090:9090',
+    '127.0.0.1::9090',
+    '0.0.0.0:17070:7070',
+  ],
 }
 
 container { 'test2':
   ensure => present,
   image  => 'test:latest',
+  restart => 'always',
+  network => 'container:test3',
+  env    => {
+    'TEST' => 'some value',
+  },
+  volumes => ['/tmp:/test-host'],
+  ports => ['28080:8080'],
+}
+
+container { 'test3':
+  ensure => present,
+  image  => 'test:latest',
+  network => 'host',
+  env    => {
+    'TEST' => 'some value',
+  },
+  volumes => '/test-anon',
+  ports => '8080',
 }
